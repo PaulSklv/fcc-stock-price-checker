@@ -24,11 +24,12 @@ module.exports = function(app) {
     )
       .then(response => {
         let adress = req.header("X-Forwarded-For");
-        let setter = {
-          $set: { price: latestPrice, likes: { $cond: { if: req.body.like === 'true', then: { $inc: {likes: 1} }, else: likes }} },
-          $setOnInsert: { stock: symbol, likes: 0 }
+//         let setter = {
+//           $set: { price: latestPrice },
+//           $setOnInsert: { stock: symbol, likes: 0 }
           
-        };
+//         };
+      let setter = {};
         const { symbol, latestPrice } = JSON.parse(response);
         if ("like" in req.body === false || req.body.like !== "true") {
           setter = {
