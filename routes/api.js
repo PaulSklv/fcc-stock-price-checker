@@ -19,11 +19,11 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
 
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
-    console.log(req.header("X-Forwarded-For"));
     rp(
       "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
     )
       .then(response => {
+        let adress = req.header("X-Forwarded-For");
         let setter = {};
         const { symbol, latestPrice } = JSON.parse(response);
         if ("like" in req.body === false || req.body.like !== "true") {
@@ -35,7 +35,8 @@ module.exports = function(app) {
           setter = {
             $set: { price: latestPrice },
             $inc: { likes: 1 },
-            $setOnInsert: { stock: symbol }
+            $setOnInsert: { stock: symbol },
+            $addToSet: { ipAdresses: adress }
           };
         }
         connection.then(client => {
