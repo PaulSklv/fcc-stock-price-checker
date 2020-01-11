@@ -22,7 +22,8 @@ module.exports = function(app) {
     console.log(req.body)
     rp("https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote")
       .then(response => {
-      let json = JSON.parse(response);
+      const { symbol, latestPrice } = JSON.parse(response);
+      console.log(json.symbol)
       res.send(json);
     });
   });
