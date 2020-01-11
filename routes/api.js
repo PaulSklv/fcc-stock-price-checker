@@ -25,25 +25,24 @@ module.exports = function(app) {
     ).then(response => {
       let setter = {};
       const { symbol, latestPrice } = JSON.parse(response);
-      if ("like" in req.body === false) {
+      if ("like" in req.body === false || req.body.like !== 'true') {
         setter = {
           $set: { price: latestPrice },
-          $setOnInsert: { stock: symbol, price: latestPrice, likes: 0 }
+          $setOnInsert: { stock: symbol, likes: 0 }
         };
-      } else if (req.body.like === true) {
+      } else if (req.body.like === 'true') {
         setter = {
           $set: { price: latestPrice },
           $inc: { likes: 1 },
-          $setOnInsert: { stock: symbol, price: latestPrice, likes: 1 }
+          $setOnInsert: { stock: symbol }
         };
       }
-      console.log(setter)
       connection.then(client => {
         client
           .db("test")
           .collection("priceChecker")
-          .findOneAndUpdate({ stock: req.body.stock }, setter, { upsert: true }).then(result => {
-          console.log(result.value)
+          .findOneAndUpdate({ stock: req.body.stock.toUpperCase() }, setter, { upsert: true }).then(result => {
+          
         });
       });
 
