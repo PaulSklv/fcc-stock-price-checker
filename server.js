@@ -21,6 +21,7 @@ app.use(helmet.contentSecurityPolicy({
     imgSrc: ["'self'", "hyperdev.com", "glitch.com"]
   }
 }));
+app.use(helmet.noCache());
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.use(cors({origin: '*'})); //For FCC testing purposes only
