@@ -70,10 +70,10 @@
     <div id="testui" style="margin-left: 5%">
       <h2 style="text-align: left">Front-End:</h2>
       <h3>Get single price and total likes</h3>
-      <form id="testForm2" class="border" action="/api/stock-prices">
+      <form id="testForm2" class="border">
         <input
           type="text"
-          name="stock1"
+          name="stock_1"
           placeholder="goog"
           style="width: 100px"
           required=""
@@ -125,7 +125,7 @@
         $("#testForm2").submit(function(e) {
           $.ajax({
             url: "/api/stock-prices",
-            type: "get",
+            type: "post",
             data: $("#testForm2").serialize(),
             success: function(data) {
               $("#jsonResult").text(JSON.stringify(data));
