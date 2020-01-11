@@ -17,23 +17,11 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true
 });
 
-module.exports = function(app) {
-  app.route("/api/stock-prices").post((req, res) => {
-    rp(
-      "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
-    )
-      .then(response => {
-        let adress = req.header("X-Forwarded-For");
-//         let setter = {
-//           $set: { price: latestPrice },
-//           $setOnInsert: { stock: symbol, likes: 0 }
-          
-//         };
-      let setter = {};
-        const { symbol, latestPrice } = JSON.parse(response);
-        if ("like" in req.body === false || req.body.like !== "true") {
-          setter = {
-            $set: { price: latestPrice },
+const likeChecker () => {
+  let setter = { };
+  if ("like" in req.body === false || req.body.like !== "true") {
+    setter = {
+      $set: { price: latestPrice },
             $setOnInsert: { stock: symbol, likes: 0 }
           };
         } else if (req.body.like === "true") {
@@ -44,6 +32,16 @@ module.exports = function(app) {
             $addToSet: { ipAdresses: adress }
           };
         }
+}
+module.exports = function(app) {
+  app.route("/api/stock-prices").post((req, res) => {
+    rp(
+      "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
+    )
+      .then(response => {
+        let adress = req.header("X-Forwarded-For");
+        const { symbol, latestPrice } = JSON.parse(response);
+        
         connection.then(client => {
           client
             .db("test")
@@ -59,6 +57,7 @@ module.exports = function(app) {
         });
       })
       .catch(error => {
+      console.log(error)
         return res.send("Something went wrong!");
       });
   });
