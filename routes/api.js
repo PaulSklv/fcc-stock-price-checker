@@ -23,6 +23,7 @@ module.exports = function(app) {
     rp(
       "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
     ).then(response => {
+      console.log(response)
       let setter = {};
       const { symbol, latestPrice } = JSON.parse(response);
       if ("like" in req.body === false || req.body.like !== 'true') {
@@ -47,6 +48,8 @@ module.exports = function(app) {
       });
 
       // res.send(json);
+    }).catch(error => {
+      return console.log(error)
     });
   });
 };
