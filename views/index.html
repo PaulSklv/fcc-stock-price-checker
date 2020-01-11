@@ -73,7 +73,7 @@
       <form id="testForm2" class="border">
         <input
           type="text"
-          name="stock_1"
+          name="stock"
           placeholder="goog"
           style="width: 100px"
           required=""
@@ -128,7 +128,6 @@
             type: 'post',
             data: $('#testForm2').serialize(),
             success: function(data) {
-              console.log('1')
               $('#jsonResult').text(JSON.stringify(data));
             }
           });

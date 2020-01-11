@@ -13,11 +13,12 @@ const helmet = require('helmet');
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(helmet.contentSecurityPolicy({
-//   directives: {
-//     defaultSrc: ["'self'"]
-//   }
-// }));
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'", 'https://hyperdev.com', 'http://glitch.com', 'https://code.jquery.com'],
+    scriptSrc: ["'self'", 'https://code.jquery.com']
+  }
+}));
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.use(cors({origin: '*'})); //For FCC testing purposes only
