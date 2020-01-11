@@ -29,16 +29,18 @@ module.exports = function(app) {
             let adress = req.header("X-Forwarded-For");
             const { symbol, latestPrice } = JSON.parse(response);
             let setter = { };
-            const isIpAlreadyExists = (response, adress) => {
-              if("ipAdresses" in response === false || response.ipAdresses.indexOf(adress) === -1) return false;
+            const isIpAlreadyExists = (result, adress) => {
+              if(result === null) return false;
+              else if("ipAdresses" in result === false || result.ipAdresses.indexOf(adress) === -1) return false;
               else return true;
             }
-            if ("like" in req.body === false || req.body.like !== "true" || isIpAlreadyExists) {
+            console.log(isIpAlreadyExists(result, adress))
+            if ("like" in req.body === false || req.body.like !== "true" || isIpAlreadyExists(result, adress)) {
               setter = {
                 $set: { price: latestPrice },
-                $setOnInsert: { stock: symbol, likes: 0 }
+                $setOnInsert: { stock: symbol, likes: 0, ipAdresses: [] }
               };
-            } else if (req.body.like === "true") {
+            } else if (req.body.like === "true" && !isIpAlreadyExists(result, adress)) {
               setter = {
                 $set: { price: latestPrice },
                 $inc: { likes: 1 },
@@ -57,7 +59,7 @@ module.exports = function(app) {
                 .then(result => {
                   const { _id, ...rest } = result.value;
                   res.send({ stockData: rest });
-                  console.log(result.)
+                  console.log(result.value)
                 });
             });
           })
