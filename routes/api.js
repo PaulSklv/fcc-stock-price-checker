@@ -18,28 +18,35 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
 });
 
 module.exports = function(app) {
-  app.route('/api/stock-prices').post((req, res) => {
-    
-    console.log(req.body)
-    rp("https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote")
-      .then(response => {
-        let setter = {};
-        const { symbol, latestPrice } = JSON.parse(response);
-        if('like' in req.body === false) {
-          setter = {
-            price: latestPrice
-          }
-        } else if (req.body.like === true) {
-          setter = {
-            price: latestPrice,
-            $inc: { like: 1 }
-          }
-        }
-        
-        connection.then(client => {
-          client.db('test').collection('priceChecker').updateOne({ stock: req.body.stock }, { $set: setter})
-        })
-      
+  app.route("/api/stock-prices").post((req, res) => {
+    console.log(req.body);
+    rp(
+      "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
+    ).then(response => {
+      let setter = {};
+      const { symbol, latestPrice } = JSON.parse(response);
+      if ("like" in req.body === false) {
+        setter = {
+          $set: { price: latestPrice },
+          $setOnInsert: { stock: symbol, price: latestPrice, likes: 0 }
+        };
+      } else if (req.body.like === true) {
+        setter = {
+          $set: { price: latestPrice },
+          $inc: { likes: 1 },
+          $setOnInsert: { stock: symbol, price: latestPrice, likes: 1 }
+        };
+      }
+      console.log(setter)
+      connection.then(client => {
+        client
+          .db("test")
+          .collection("priceChecker")
+          .findOneAndUpdate({ stock: req.body.stock }, setter, { upsert: true }).then(result => {
+          console.log(result.value)
+        });
+      });
+
       // res.send(json);
     });
   });
