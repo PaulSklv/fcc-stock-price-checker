@@ -23,13 +23,17 @@ module.exports = function(app) {
       "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
     )
       .then(response => {
-        let adress = req.header("X-Forwarded-For");
-        const { symbol, latestPrice } = JSON.parse(response);
-        let setter = { };
-        let isIpAlreadyExists;
+        
         connection.then(client => {
           client.db("test").collection("priceChecker").findOne({ stock: req.body.stock.toUpperCase() }).then(result => {
-            if ("like" in req.body === false || req.body.like !== "true") {
+            let adress = req.header("X-Forwarded-For");
+            const { symbol, latestPrice } = JSON.parse(response);
+            let setter = { };
+            const isIpAlreadyExists = (response, adress) => {
+              if("ipAdresses" in response === false || response.ipAdresses.indexOf(adress) === -1) return false;
+              else return true;
+            }
+            if ("like" in req.body === false || req.body.like !== "true" || isIpAlreadyExists) {
               setter = {
                 $set: { price: latestPrice },
                 $setOnInsert: { stock: symbol, likes: 0 }
@@ -42,21 +46,23 @@ module.exports = function(app) {
                 $addToSet: { ipAdresses: adress }
               };
             }
+            connection.then(client => {
+              client
+                .db("test")
+                .collection("priceChecker")
+                .findOneAndUpdate({ stock: req.body.stock.toUpperCase() }, setter, {
+                  upsert: true,
+                  returnOriginal: false
+                })
+                .then(result => {
+                  const { _id, ...rest } = result.value;
+                  res.send({ stockData: rest });
+                  console.log(result.)
+                });
+            });
           })
         })
-        // connection.then(client => {
-        //   client
-        //     .db("test")
-        //     .collection("priceChecker")
-        //     .findOneAndUpdate({ stock: req.body.stock.toUpperCase() }, setter, {
-        //       upsert: true,
-        //       returnOriginal: false
-        //     })
-        //     .then(result => {
-        //       const { _id, ...rest } = result.value;
-        //       res.send({ stockData: rest });
-        //     });
-        // });
+        
       })
       .catch(error => {
       console.log(error)
