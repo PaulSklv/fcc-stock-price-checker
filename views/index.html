@@ -128,6 +128,7 @@
             type: 'post',
             data: $('#testForm2').serialize(),
             success: function(data) {
+              console.log('1')
               $('#jsonResult').text(JSON.stringify(data));
             }
           });
