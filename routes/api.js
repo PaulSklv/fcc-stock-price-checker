@@ -10,6 +10,7 @@
 
 var expect = require("chai").expect;
 var MongoClient = require("mongodb").MongoClient;
+const rp = require("request-promise");
 
 const connection = MongoClient.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -17,9 +18,11 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
 });
 
 module.exports = function(app) {
-  app.route("/api/stock-prices").get((res, req) => {
-    fetch("https://repeated-alpaca.glitch.me/v1/stock/msft/quote")
-      .then(response => response.json())
-      .then(json => res.send(json));
+  app.route("/api/stock-prices").get((req, res) => {
+    rp(`https://repeated-alpaca.glitch.me/v1/stock/${req.body.stock}/quote`)
+      .then(response => {
+      let json = JSON.parse(response);
+      res.send(json);
+    });
   });
 };
