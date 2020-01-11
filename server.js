@@ -14,10 +14,12 @@ var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet.contentSecurityPolicy({
-  defaultSrc: ["'self'"],
+  directives: {
+    defaultSrc: ["'self'"],
     styleSrc: ["'self'", "'unsafe-inline'"],
     scriptSrc: ["'self'", "'unsafe-inline'", "code.jquery.com"],
     imgSrc: ["'self'", "hyperdev.com", "glitch.com"]
+  }
 }));
 app.use('/public', express.static(process.cwd() + '/public'));
 
