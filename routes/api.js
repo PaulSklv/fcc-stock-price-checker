@@ -17,5 +17,9 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
 });
 
 module.exports = function(app) {
-  app.route("/api/stock-prices").get(function(req, res) {});
+  app.route("/api/stock-prices").get((res, req) => {
+    fetch("https://repeated-alpaca.glitch.me/v1/stock/msft/quote")
+      .then(response => response.json())
+      .then(json => res.send(json));
+  });
 };
