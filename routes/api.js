@@ -26,7 +26,7 @@ module.exports = function(app) {
         
         connection.then(client => {
           client.db("test").collection("priceChecker").findOne({ stock: req.body.stock.toUpperCase() }).then(result => {
-            let adress = req.header("X-Forwarded-For");
+            let adress = req.header("X-Forwarded-For").split(",")[0];
             const { symbol, latestPrice } = JSON.parse(response);
             let setter = { };
             const isIpAlreadyExists = (result, adress) => {
