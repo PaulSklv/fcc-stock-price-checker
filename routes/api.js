@@ -19,7 +19,8 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
 
 module.exports = function(app) {
   app.route("/api/stock-prices").get((req, res) => {
-    rp(`https://repeated-alpaca.glitch.me/v1/stock/${req.body.stock}/quote`)
+    console.log(req.body)
+    rp("https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote")
       .then(response => {
       let json = JSON.parse(response);
       res.send(json);
