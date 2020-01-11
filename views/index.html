@@ -122,13 +122,13 @@
           });
           e.preventDefault();
         });
-        $("#testForm2").submit(function(e) {
+        $('#testForm2').submit(function(e) {
           $.ajax({
-            url: "/api/stock-prices",
-            type: "post",
-            data: $("#testForm2").serialize(),
+            url: '/api/stock-prices',
+            type: 'post',
+            data: $('#testForm2').serialize(),
             success: function(data) {
-              $("#jsonResult").text(JSON.stringify(data));
+              $('#jsonResult').text(JSON.stringify(data));
             }
           });
           e.preventDefault();
