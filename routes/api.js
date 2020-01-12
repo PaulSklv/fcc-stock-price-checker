@@ -101,12 +101,8 @@ module.exports = function(app) {
           console.log(stock[0]);
           connection.then(client => {
             collection(client)
-              .find({
-                $or: [
-                  { stock: stock[0].toUpperCase() },
-                  { stock: stock[1].toUpperCase() }
-                ]
-              })
+              .updateMany({$and: [{$or:[ { stock: stock[0].toUpperCase() }, { stock: stock[1].toUpperCase()}]}, {$or: []}]}
+                         )
               .toArray()
               .then(result => {
                 console.log(result);
