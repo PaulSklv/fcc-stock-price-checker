@@ -118,9 +118,19 @@ module.exports = function(app) {
             collection(client)
               .bulkWrite([
               
-                newSetter(req).map(obj => {
-                  return {
-                    updateOne: 
+                newSetter(req).map((obj, i, arr) => {
+                  return obj[i].like === true ? {
+                    updateOne: {
+                      filter: {$or: [{ $and: [{ stock: obj[i].stock }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
+                      update: { $set: { price: JSON.parse(stock_1).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
+                      upsert: true
+                    }
+                  } : {
+                    updateOne: {
+                      filter: {stock: obj[i].stock.toUpperCase()},
+                      update: { $set: { price: JSON.parse(stock_1).latestPrice }, $setOnInsert: { likes: 0 }},
+                      upsert: true
+                    }
                   }
                 })
                 // {
