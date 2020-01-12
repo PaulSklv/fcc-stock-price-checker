@@ -88,65 +88,71 @@ const addData = (req, res, stocks) => {
       });
   });
 };
-module.exports = function(app) {
-  app.route("/api/stock-prices").post((req, res) => {
-    console.log(req.query)
-    if (typeof req.body.stock === "string") {
-      rp(
-        "https://repeated-alpaca.glitch.me/v1/stock/" +
-          req.body.stock +
-          "/quote"
-      )
-        .then(response => {
-          const stocks = [response];
-          addData(req, res, stocks);
-          connection.then(client => {
-            collection(client)
-              .find({ stock: req.body.stock.toUpperCase() })
-              .toArray()
-              .then(result => {
-                const { _id, ipAdresses, ...rest } = result[0];
-                res.send({sotckData: rest});
-              });
-          });
-        })
-        .catch(error => {
-          console.log(error);
-          return res.send("Something went wrong!");
+
+const request = (sendedData, req, res) => {
+  if (typeof sendedData.stock === "string") {
+    rp(
+      "https://repeated-alpaca.glitch.me/v1/stock/" + sendedData.stock + "/quote"
+    )
+      .then(response => {
+        const stocks = [response];
+        addData(sendedData, res, stocks);
+        connection.then(client => {
+          collection(client)
+            .find({ stock: sendedData.stock.toUpperCase() })
+            .toArray()
+            .then(result => {
+              const { _id, ipAdresses, ...rest } = result[0];
+              res.send({ sotckData: rest });
+            });
         });
-    } else if (typeof req.body.stock === "object") {
-      const { stock } = req.body;
+      })
+      .catch(error => {
+        console.log(error);
+        return res.send("Something went wrong!");
+      });
+  } else if (typeof sendedData.stock === "object") {
+    const { stock } = sendedData;
+    rp(
+      "https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote"
+    ).then(stock_1 => {
       rp(
-        "https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote"
-      ).then(stock_1 => {
-        rp(
-          "https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote"
-        ).then(stock_2 => {
-          const stocks = [stock_1, stock_2];
-          addData(req, res, stocks);
-          connection.then(client => {
-            collection(client)
-              .find({
-                $or: [
-                  { stock: stock[0].toUpperCase() },
-                  { stock: stock[1].toUpperCase() }
-                ]
-              })
-              .toArray()
-              .then(result => {
-                const rel_likes = result[0].likes - result[1].likes
-                res.send({stockData: result.map((obj, i, array)=> {
+        "https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote"
+      ).then(stock_2 => {
+        const stocks = [stock_1, stock_2];
+        addData(req, res, stocks);
+        connection.then(client => {
+          collection(client)
+            .find({
+              $or: [
+                { stock: stock[0].toUpperCase() },
+                { stock: stock[1].toUpperCase() }
+              ]
+            })
+            .toArray()
+            .then(result => {
+              const rel_likes = result[0].likes - result[1].likes;
+              res.send({
+                stockData: result.map((obj, i, array) => {
                   const { stock, price } = obj;
                   return {
                     stock,
                     price,
-                    rel_likes: rel_likes,
-                  }
-                })})
+                    rel_likes: rel_likes
+                  };
+                })
               });
-          });
+            });
         });
       });
-    }
+    });
+  }
+};
+
+module.exports = function(app) {
+  app.route("/api/stock-prices").post((req, res) => {
+    request(req.body, req, res);
+  }).get((req, res) => {
+    request(req.query, req, res);
   });
 };
