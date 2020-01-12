@@ -120,7 +120,7 @@ module.exports = function(app) {
                     updateOne: {
                       filter: {$or: [{ $and: [{ stock: obj.stock.toUpperCase() }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
                       update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
-                      upsert: true
+                     
                     }
                   } : {
                     updateOne: {
