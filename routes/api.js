@@ -54,6 +54,7 @@ const setter = (req, isIpAlreadyExists, response, result) => {
 const collection = client => {
   return client.db("test").collection("priceChecker");
 };
+
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
     if (typeof req.body.stock === "string") {
