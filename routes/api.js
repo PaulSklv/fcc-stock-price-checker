@@ -82,7 +82,10 @@ const addData = (req, res, stocks) => {
                 }
               };
         })
-      ).catch(error => {return console.log("something went wrong!")});
+      )
+      .catch(error => {
+        return console.log("something went wrong!", error);
+      });
   });
 };
 module.exports = function(app) {
@@ -96,7 +99,15 @@ module.exports = function(app) {
         .then(response => {
           const stocks = [response];
           addData(req, res, stocks);
-          connection
+          connection.then(client => {
+            collection(client)
+              .find({ stock: req.body.stock.toUpperCase() })
+              .toArray()
+              .then(result => {
+                const { _id, idAdresses, ...rest } = result[0];
+                res.send({sotckData: rest});
+              });
+          });
         })
         .catch(error => {
           console.log(error);
@@ -112,6 +123,19 @@ module.exports = function(app) {
         ).then(stock_2 => {
           const stocks = [stock_1, stock_2];
           addData(req, res, stocks);
+          connection.then(client => {
+            collection(client)
+              .find({
+                $or: [
+                  { stock: stock[0].toUpperCase() },
+                  { stock: stock[1].toUpperCase() }
+                ]
+              })
+              .toArray()
+              .then(result => {
+                console.log(result);
+              });
+          });
         });
       });
     }
@@ -138,66 +162,4 @@ module.exports = function(app) {
 //                     });
 //                 });
 //               });
-//           });
-
-
-// let adress = req.header("X-Forwarded-For").split(",")[0];
-
-//           connection.then(client => {
-//             collection(client).createIndex({ stock: 1 }, { unique: true });
-//             collection(client)
-//               .bulkWrite(
-//                 newSetter(req).map((obj, i, arr) => {
-//                   return obj.like === true
-//                     ? {
-//                         updateOne: {
-//                           filter: {
-//                             $and: [
-//                               {
-//                                 $or: [
-//                                   {
-//                                     price: {
-//                                       $ne: JSON.parse(stocks[i]).latestPrice
-//                                     }
-//                                   },
-//                                   {
-//                                     $or: [
-//                                       { ipAdresses: { $exists: false } },
-//                                       {
-//                                         ipAdresses: {
-//                                           $not: { $elemMatch: { $eq: adress } }
-//                                         }
-//                                       }
-//                                     ]
-//                                   }
-//                                 ]
-//                               },
-//                               { stock: obj.stock.toUpperCase() }
-//                             ]
-//                           },
-//                           update: {
-//                             $set: { price: JSON.parse(stocks[i]).latestPrice },
-//                             $inc: { likes: 1 },
-//                             $addToSet: { ipAdresses: adress },
-//                             $setOnInsert: { stock: obj.stock.toUpperCase() }
-//                           },
-//                           upsert: true
-//                         }
-//                       }
-//                     : {
-//                         updateOne: {
-//                           filter: { stock: obj.stock.toUpperCase() },
-//                           update: {
-//                             $set: { price: JSON.parse(stocks[i]).latestPrice },
-//                             $setOnInsert: {
-//                               stock: obj.stock.toUpperCase(),
-//                               likes: 0
-//                             }
-//                           },
-//                           upsert: true
-//                         }
-//                       };
-//                 })
-//               )
-//               .then(result => {});
 //           });
