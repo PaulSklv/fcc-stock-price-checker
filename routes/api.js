@@ -50,6 +50,10 @@ const setter = (req, isIpAlreadyExists, response, result) => {
   }
   return setter;
 };
+
+const collection = (client) => {
+  return client.db("test").collection("priceChecker");
+}
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
     if(typeof req.body.stock === "string") {
@@ -58,15 +62,11 @@ module.exports = function(app) {
       )
         .then(response => {
           connection.then(client => {
-            client
-              .db("test")
-              .collection("priceChecker")
+            collection(client)
               .findOne({ stock: req.body.stock.toUpperCase() })
               .then(result => {
                 connection.then(client => {
-                  client
-                    .db("test")
-                    .collection("priceChecker")
+                  collection(client)
                     .findOneAndUpdate(
                       { stock: req.body.stock.toUpperCase() },
                       setter(req, isIpAlreadyExists, response, result),
@@ -91,7 +91,13 @@ module.exports = function(app) {
     } else if(typeof req.body.stock === "object") {
       const { stock } = req.body;
       rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote").then(stock_1 => {
-        rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote")
+        rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote").then(stock_2 => {
+          console.log(JSON.parse(stock_1));
+          console.log(JSON.parse(stock_2));
+          connection.thne(client => {
+            collection(client).findOne({})
+          })
+        })
       })
     }
   });
