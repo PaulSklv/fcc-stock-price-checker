@@ -51,14 +51,16 @@ const setter = (req, isIpAlreadyExists, response, result) => {
   return setter;
 };
 
-const collection = (client) => {
+const collection = client => {
   return client.db("test").collection("priceChecker");
-}
+};
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
-    if(typeof req.body.stock === "string") {
+    if (typeof req.body.stock === "string") {
       rp(
-        "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
+        "https://repeated-alpaca.glitch.me/v1/stock/" +
+          req.body.stock +
+          "/quote"
       )
         .then(response => {
           connection.then(client => {
@@ -88,18 +90,30 @@ module.exports = function(app) {
           console.log(error);
           return res.send("Something went wrong!");
         });
-    } else if(typeof req.body.stock === "object") {
+    } else if (typeof req.body.stock === "object") {
       const { stock } = req.body;
-      rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote").then(stock_1 => {
-        rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote").then(stock_2 => {
-          console.log(JSON.parse(stock_1));
-          console.log(JSON.parse(stock_2));
-          connection.thne(client => {
-            collection(client).findOne({})
-          })
-        })
-      })
+      rp(
+        "https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote"
+      ).then(stock_1 => {
+        rp(
+          "https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote"
+        ).then(stock_2 => {
+          console.log(stock[0]);
+          connection.then(client => {
+            collection(client)
+              .find({
+                $or: [
+                  { stock: stock[0].toUpperCase() },
+                  { stock: stock[1].toUpperCase() }
+                ]
+              })
+              .toArray()
+              .then(result => {
+                console.log(result);
+              });
+          });
+        });
+      });
     }
   });
-  
 };
