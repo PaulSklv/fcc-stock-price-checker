@@ -129,21 +129,23 @@ module.exports = function(app) {
                       upsert: true
                     }
                   }
-                })[0].filter)
+                }))
             collection(client)
               .bulkWrite(
               
                 newSetter(req).map((obj, i, arr) => {
                   return obj.like === true ? {
                     updateOne: {
-                      filter: {$or: [{ $and: [{ stock: obj.stock.toUpperCase() }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
-                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
+                      // filter: {$or: [{ $and: [{ stock: obj.stock.toUpperCase() }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: JSON.parse(stocks[i]).latestPrice}}]},
+                      filter: {$or: [{price: { $ne: JSON.parse(stocks[i]).latestPrice}}]},
+                      filter: {stock: obj.stock.toUpperCase()},
+                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }, $setOnInsert: { stock: obj.stock.toUpperCase() }},
                       upsert: true
                     }
                   } : {
                     updateOne: {
                       filter: {stock: obj.stock.toUpperCase()},
-                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $setOnInsert: { likes: 0 }},
+                      update: { $set: {  price: JSON.parse(stocks[i]).latestPrice }, $setOnInsert: { stock: obj.stock.toUpperCase(), likes: 0 }},
                       upsert: true
                     }
                   }
