@@ -55,6 +55,11 @@ const collection = client => {
   return client.db("test").collection("priceChecker");
 };
 
+const newSetter = (req) => {
+  if(typeof req.body.stock === 'object') {
+    return req.body.like === 'true' ? [...req.body.stock, "bothLike"] : req.body.stock;
+  }
+}
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
     if (typeof req.body.stock === "string") {
@@ -107,12 +112,12 @@ module.exports = function(app) {
               .bulkWrite([
                 {
                   updateOne: {
-                    filter: { stock: stock[0] },
-                    update: { $set: { price: stock_1.latestPrice, likes: 0 }},
+                    filter: {$or: [{ $and: [{ stock: stock[0] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
+                    update: { $set: { price: stock_1.latestPrice, {$inc: {likes: 0}} }},
                     upsert: true
                   },
                   updateOne: {
-                    filter: { stock: stock[1] },
+                    filter: {$or: [{ $and: [{ stock: stock[1] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_2.latestPrice}}]},
                     update: { $set: { price: stock_2.latestPrice, likes: 0 }},
                     upsert: true
                   }
