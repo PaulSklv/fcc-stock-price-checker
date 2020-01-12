@@ -56,8 +56,13 @@ const collection = client => {
 };
 
 const newSetter = (req) => {
+  let setter = [];
+  let like = "like" in req.body ? true : false;
   if(typeof req.body.stock === 'object') {
-    return req.body.like === 'true' ? [...req.body.stock, "bothLike"] : req.body.stock;
+    req.body.stock.map(el => {
+      setter = [...setter, { stock: el, like }]
+    })
+  return setter;
   }
 }
 module.exports = function(app) {
@@ -108,26 +113,32 @@ module.exports = function(app) {
           let adress = req.header("X-Forwarded-For").split(",")[0];
           const { symbol1, latestPrice1 } = JSON.parse(stock_1);
           const { symbol2, latestPrice2 } = JSON.parse(stock_2);
-          console.log(JSON.parse(stock_1).latestPrice)
+          
           connection.then(client => {
             collection(client)
               .bulkWrite([
-                {
-                  updateOne: {
-                    filter: {stock: stock[0].toUpperCase()},
-                    // filter: {$or: [{ $and: [{ stock: stock[0] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
-                    update: { $set: { price: JSON.parse(stock_1).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
-                    upsert: true
+              
+                newSetter(req).map(obj => {
+                  return {
+                    updateOne: 
                   }
-                },
-                {
-                  updateOne: {
-                    filter: {stock: stock[1].toUpperCase()},
-                    // filter: {$or: [{ $and: [{ stock: stock[1] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_2.latestPrice}}]},
-                    update: { $set: { price: JSON.parse(stock_2).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
-                    upsert: true
-                  }
-                }
+                })
+                // {
+                //   updateOne: {
+                //     filter: {stock: stock[0].toUpperCase()},
+                //     // filter: {$or: [{ $and: [{ stock: stock[0] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
+                //     update: { $set: { price: JSON.parse(stock_1).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
+                //     upsert: true
+                //   }
+                // },
+                // {
+                //   updateOne: {
+                //     filter: {stock: stock[1].toUpperCase()},
+                //     // filter: {$or: [{ $and: [{ stock: stock[1] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_2.latestPrice}}]},
+                //     update: { $set: { price: JSON.parse(stock_2).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
+                //     upsert: true
+                //   }
+                // }
             ])
               .then(result => {
                 
