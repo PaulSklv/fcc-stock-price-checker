@@ -99,9 +99,17 @@ module.exports = function(app) {
           "https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote"
         ).then(stock_2 => {
           console.log(stock[0]);
+          let adress = req.header("X-Forwarded-For").split(",")[0];
+          const { symbol, latestPrice } = JSON.parse(response);
           connection.then(client => {
             collection(client)
-              .updateMany({$and: [{$or:[ { stock: stock[0].toUpperCase() }, { stock: stock[1].toUpperCase()}]}, {$or: []}]}
+              .updateMany({$and: [{$or:[ { stock: stock[0].toUpperCase() }, { stock: stock[1].toUpperCase()}]}, {$or: [{ipAdresses: false}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]},
+                          {
+                            $set: { price: latestPrice },
+                            $inc: { likes: 1 },
+                            $setOnInsert: { stock: symbol },
+                            $addToSet: { ipAdresses: adress }
+                          }
                          )
               .toArray()
               .then(result => {
