@@ -90,6 +90,7 @@ const addData = (req, res, stocks) => {
 };
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
+    console.log(req.query)
     if (typeof req.body.stock === "string") {
       rp(
         "https://repeated-alpaca.glitch.me/v1/stock/" +
@@ -104,7 +105,7 @@ module.exports = function(app) {
               .find({ stock: req.body.stock.toUpperCase() })
               .toArray()
               .then(result => {
-                const { _id, idAdresses, ...rest } = result[0];
+                const { _id, ipAdresses, ...rest } = result[0];
                 res.send({sotckData: rest});
               });
           });
@@ -133,7 +134,15 @@ module.exports = function(app) {
               })
               .toArray()
               .then(result => {
-                console.log(result);
+                const rel_likes = result[0].likes - result[1].likes
+                res.send({stockData: result.map((obj, i, array)=> {
+                  const { stock, price } = obj;
+                  return {
+                    stock,
+                    price,
+                    rel_likes: rel_likes,
+                  }
+                })})
               });
           });
         });
@@ -141,25 +150,3 @@ module.exports = function(app) {
     }
   });
 };
-// connection.then(client => {
-//             collection(client)
-//               .findOne({ stock: req.body.stock.toUpperCase() })
-//               .then(result => {
-//                 connection.then(client => {
-//                   collection(client)
-//                     .findOneAndUpdate(
-//                       { stock: req.body.stock.toUpperCase() },
-//                       setter(req, isIpAlreadyExists, response, result),
-//                       {
-//                         upsert: true,
-//                         returnOriginal: false
-//                       }
-//                     )
-//                     .then(result => {
-//                       const { _id, ...rest } = result.value;
-//                       res.send({ stockData: rest });
-//                       console.log(result.value);
-//                     });
-//                 });
-//               });
-//           });
