@@ -82,10 +82,7 @@ const addData = (req, res, stocks) => {
                 }
               };
         })
-      )
-      .then(result => {
-      console.log(result.result)
-    });
+      ).catch(error => {return console.log("something went wrong!")});
   });
 };
 module.exports = function(app) {
@@ -99,6 +96,7 @@ module.exports = function(app) {
         .then(response => {
           const stocks = [response];
           addData(req, res, stocks);
+          connection
         })
         .catch(error => {
           console.log(error);
