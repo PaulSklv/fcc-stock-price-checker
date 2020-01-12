@@ -16,40 +16,6 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-const isIpAlreadyExists = (result, adress) => {
-  if (result === null) return false;
-  else if (
-    "ipAdresses" in result === false ||
-    result.ipAdresses.indexOf(adress) === -1
-  )
-    return false;
-  else return true;
-};
-
-const setter = (req, isIpAlreadyExists, response, result) => {
-  let adress = req.header("X-Forwarded-For").split(",")[0];
-  const { symbol, latestPrice } = JSON.parse(response);
-  let setter = {};
-
-  if (
-    "like" in req.body === false ||
-    req.body.like !== "true" ||
-    isIpAlreadyExists(result, adress)
-  ) {
-    setter = {
-      $set: { price: latestPrice },
-      $setOnInsert: { stock: symbol, likes: 0, ipAdresses: [] }
-    };
-  } else if (req.body.like === "true" && !isIpAlreadyExists(result, adress)) {
-    setter = {
-      $set: { price: latestPrice },
-      $inc: { likes: 1 },
-      $setOnInsert: { stock: symbol },
-      $addToSet: { ipAdresses: adress }
-    };
-  }
-  return setter;
-};
 
 const collection = client => {
   return client.db("test").collection("priceChecker");
@@ -66,8 +32,9 @@ const newSetter = req => {
   return setter;
 };
 
-const addData = (req, ) => {
+const addData = (req, res, stocks) => {
   connection.then(client => {
+    let adress = req.header("X-Forwarded-For").split(",")[0];
     collection(client).createIndex({ stock: 1 }, { unique: true });
     collection(client)
       .bulkWrite(
@@ -116,7 +83,9 @@ const addData = (req, ) => {
               };
         })
       )
-      .then(result => {});
+      .then(result => {
+      console.log(result.result)
+    });
   });
 };
 module.exports = function(app) {
@@ -128,28 +97,8 @@ module.exports = function(app) {
           "/quote"
       )
         .then(response => {
-          connection.then(client => {
-            collection(client)
-              .findOne({ stock: req.body.stock.toUpperCase() })
-              .then(result => {
-                connection.then(client => {
-                  collection(client)
-                    .findOneAndUpdate(
-                      { stock: req.body.stock.toUpperCase() },
-                      setter(req, isIpAlreadyExists, response, result),
-                      {
-                        upsert: true,
-                        returnOriginal: false
-                      }
-                    )
-                    .then(result => {
-                      const { _id, ...rest } = result.value;
-                      res.send({ stockData: rest });
-                      console.log(result.value);
-                    });
-                });
-              });
-          });
+          const stocks = [response];
+          addData(req, res, stocks);
         })
         .catch(error => {
           console.log(error);
@@ -163,70 +112,94 @@ module.exports = function(app) {
         rp(
           "https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote"
         ).then(stock_2 => {
-          console.log(stock[0]);
           const stocks = [stock_1, stock_2];
-          let adress = req.header("X-Forwarded-For").split(",")[0];
-
-          connection.then(client => {
-            collection(client).createIndex({ stock: 1 }, { unique: true });
-            collection(client)
-              .bulkWrite(
-                newSetter(req).map((obj, i, arr) => {
-                  return obj.like === true
-                    ? {
-                        updateOne: {
-                          filter: {
-                            $and: [
-                              {
-                                $or: [
-                                  {
-                                    price: {
-                                      $ne: JSON.parse(stocks[i]).latestPrice
-                                    }
-                                  },
-                                  {
-                                    $or: [
-                                      { ipAdresses: { $exists: false } },
-                                      {
-                                        ipAdresses: {
-                                          $not: { $elemMatch: { $eq: adress } }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                ]
-                              },
-                              { stock: obj.stock.toUpperCase() }
-                            ]
-                          },
-                          update: {
-                            $set: { price: JSON.parse(stocks[i]).latestPrice },
-                            $inc: { likes: 1 },
-                            $addToSet: { ipAdresses: adress },
-                            $setOnInsert: { stock: obj.stock.toUpperCase() }
-                          },
-                          upsert: true
-                        }
-                      }
-                    : {
-                        updateOne: {
-                          filter: { stock: obj.stock.toUpperCase() },
-                          update: {
-                            $set: { price: JSON.parse(stocks[i]).latestPrice },
-                            $setOnInsert: {
-                              stock: obj.stock.toUpperCase(),
-                              likes: 0
-                            }
-                          },
-                          upsert: true
-                        }
-                      };
-                })
-              )
-              .then(result => {});
-          });
+          addData(req, res, stocks);
         });
       });
     }
   });
 };
+// connection.then(client => {
+//             collection(client)
+//               .findOne({ stock: req.body.stock.toUpperCase() })
+//               .then(result => {
+//                 connection.then(client => {
+//                   collection(client)
+//                     .findOneAndUpdate(
+//                       { stock: req.body.stock.toUpperCase() },
+//                       setter(req, isIpAlreadyExists, response, result),
+//                       {
+//                         upsert: true,
+//                         returnOriginal: false
+//                       }
+//                     )
+//                     .then(result => {
+//                       const { _id, ...rest } = result.value;
+//                       res.send({ stockData: rest });
+//                       console.log(result.value);
+//                     });
+//                 });
+//               });
+//           });
+
+
+// let adress = req.header("X-Forwarded-For").split(",")[0];
+
+//           connection.then(client => {
+//             collection(client).createIndex({ stock: 1 }, { unique: true });
+//             collection(client)
+//               .bulkWrite(
+//                 newSetter(req).map((obj, i, arr) => {
+//                   return obj.like === true
+//                     ? {
+//                         updateOne: {
+//                           filter: {
+//                             $and: [
+//                               {
+//                                 $or: [
+//                                   {
+//                                     price: {
+//                                       $ne: JSON.parse(stocks[i]).latestPrice
+//                                     }
+//                                   },
+//                                   {
+//                                     $or: [
+//                                       { ipAdresses: { $exists: false } },
+//                                       {
+//                                         ipAdresses: {
+//                                           $not: { $elemMatch: { $eq: adress } }
+//                                         }
+//                                       }
+//                                     ]
+//                                   }
+//                                 ]
+//                               },
+//                               { stock: obj.stock.toUpperCase() }
+//                             ]
+//                           },
+//                           update: {
+//                             $set: { price: JSON.parse(stocks[i]).latestPrice },
+//                             $inc: { likes: 1 },
+//                             $addToSet: { ipAdresses: adress },
+//                             $setOnInsert: { stock: obj.stock.toUpperCase() }
+//                           },
+//                           upsert: true
+//                         }
+//                       }
+//                     : {
+//                         updateOne: {
+//                           filter: { stock: obj.stock.toUpperCase() },
+//                           update: {
+//                             $set: { price: JSON.parse(stocks[i]).latestPrice },
+//                             $setOnInsert: {
+//                               stock: obj.stock.toUpperCase(),
+//                               likes: 0
+//                             }
+//                           },
+//                           upsert: true
+//                         }
+//                       };
+//                 })
+//               )
+//               .then(result => {});
+//           });
