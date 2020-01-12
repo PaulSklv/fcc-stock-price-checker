@@ -100,18 +100,23 @@ module.exports = function(app) {
         ).then(stock_2 => {
           console.log(stock[0]);
           let adress = req.header("X-Forwarded-For").split(",")[0];
-          const { symbol, latestPrice } = JSON.parse(response);
+          // const { symbol, latestPrice } = JSON.parse(response);
           connection.then(client => {
             collection(client)
-              .updateMany({$and: [{$or:[ { stock: stock[0].toUpperCase() }, { stock: stock[1].toUpperCase()}]}, {$or: [{ipAdresses: false}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]},
-                          {
-                            $set: { price: latestPrice },
-                            $inc: { likes: 1 },
-                            $setOnInsert: { stock: symbol },
-                            $addToSet: { ipAdresses: adress }
-                          }
-                         )
-              .toArray()
+              .bulkWrite([
+                {
+                  updateOne: {
+                    filter: { stock: stock[0] },
+                    update: { $set: { price: stock_1.latestPrice, likes: 0 }},
+                    upsert: true
+                  },
+                  updateOne: {
+                    filter: { stock: stock[1] },
+                    update: { $set: { price: stock_2.latestPrice, likes: 0 }},
+                    upsert: true
+                  }
+                }
+            ])
               .then(result => {
                 console.log(result);
               });
@@ -121,3 +126,6 @@ module.exports = function(app) {
     }
   });
 };
+
+// updateMany({$and: [{$or:[ { stock: stock[0].toUpperCase() }, { stock: stock[1].toUpperCase()}]}, {$or: [{ipAdresses: false}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]},
+ 
