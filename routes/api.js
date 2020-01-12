@@ -16,25 +16,26 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
+const isIpAlreadyExists = (result, adress) => {
+  if(result === null) return false;
+  else if("ipAdresses" in result === false || result.ipAdresses.indexOf(adress) === -1) return false;
+  else return true;
+}
 
+const setter = (req,)
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
+    console.log(req.body)
     rp(
       "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
     )
       .then(response => {
-        
         connection.then(client => {
           client.db("test").collection("priceChecker").findOne({ stock: req.body.stock.toUpperCase() }).then(result => {
             let adress = req.header("X-Forwarded-For").split(",")[0];
             const { symbol, latestPrice } = JSON.parse(response);
             let setter = { };
-            const isIpAlreadyExists = (result, adress) => {
-              if(result === null) return false;
-              else if("ipAdresses" in result === false || result.ipAdresses.indexOf(adress) === -1) return false;
-              else return true;
-            }
-            console.log(isIpAlreadyExists(result, adress))
+            
             if ("like" in req.body === false || req.body.like !== "true" || isIpAlreadyExists(result, adress)) {
               setter = {
                 $set: { price: latestPrice },
