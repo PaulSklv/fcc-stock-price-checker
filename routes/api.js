@@ -137,8 +137,8 @@ module.exports = function(app) {
                   return obj.like === true ? {
                     updateOne: {
                       // filter: {$or: [{ $and: [{ stock: obj.stock.toUpperCase() }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: JSON.parse(stocks[i]).latestPrice}}]},
-                      filter: {$or: [{price: { $ne: JSON.parse(stocks[i]).latestPrice}}]},
-                      filter: {stock: obj.stock.toUpperCase()},
+                      filter: {$and : [{$or: [{price: { $ne: JSON.parse(stocks[i]).latestPrice}}, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {stock: obj.stock.toUpperCase()}]},
+                      // filter: {stock: obj.stock.toUpperCase()},
                       update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }, $setOnInsert: { stock: obj.stock.toUpperCase() }},
                       upsert: true
                     }
