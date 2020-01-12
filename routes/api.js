@@ -113,27 +113,53 @@ module.exports = function(app) {
           let adress = req.header("X-Forwarded-For").split(",")[0];
           const { symbol1, latestPrice1 } = JSON.parse(stock_1);
           const { symbol2, latestPrice2 } = JSON.parse(stock_2);
-          
+          const stocks = [stock_1, stock_2];
           connection.then(client => {
-            collection(client)
-              .bulkWrite([
-              
-                newSetter(req).map((obj, i, arr) => {
-                  return obj[i].like === true ? {
+            console.log(newSetter(req).map((obj, i, arr) => {
+                  return obj.like === true ? {
                     updateOne: {
-                      filter: {$or: [{ $and: [{ stock: obj[i].stock }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
-                      update: { $set: { price: JSON.parse(stock_1).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
+                      filter: {$or: [{ $and: [{ stock: obj.stock.toUpperCase() }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
+                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
                       upsert: true
                     }
                   } : {
                     updateOne: {
-                      filter: {stock: obj[i].stock.toUpperCase()},
-                      update: { $set: { price: JSON.parse(stock_1).latestPrice }, $setOnInsert: { likes: 0 }},
+                      filter: {stock: obj.stock.toUpperCase()},
+                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $setOnInsert: { likes: 0 }},
+                      upsert: true
+                    }
+                  }
+                })[0].filter)
+            collection(client)
+              .bulkWrite(
+              
+                newSetter(req).map((obj, i, arr) => {
+                  return obj.like === true ? {
+                    updateOne: {
+                      filter: {$or: [{ $and: [{ stock: obj.stock.toUpperCase() }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
+                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $inc: { likes: 1 }, $addToSet: { ipAdresses: adress }},
+                      upsert: true
+                    }
+                  } : {
+                    updateOne: {
+                      filter: {stock: obj.stock.toUpperCase()},
+                      update: { $set: { price: JSON.parse(stocks[i]).latestPrice }, $setOnInsert: { likes: 0 }},
                       upsert: true
                     }
                   }
                 })
-                // {
+                
+            )
+              .then(result => {
+                
+              });
+          });
+        });
+      });
+    }
+  });
+};
+// {
                 //   updateOne: {
                 //     filter: {stock: stock[0].toUpperCase()},
                 //     // filter: {$or: [{ $and: [{ stock: stock[0] }, {$or: [{ipAdresses: {$exists: false}}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]}, {price: { $ne: stock_1.latestPrice}}]},
@@ -149,16 +175,5 @@ module.exports = function(app) {
                 //     upsert: true
                 //   }
                 // }
-            ])
-              .then(result => {
-                
-              });
-          });
-        });
-      });
-    }
-  });
-};
-
 // updateMany({$and: [{$or:[ { stock: stock[0].toUpperCase() }, { stock: stock[1].toUpperCase()}]}, {$or: [{ipAdresses: false}, {ipAdresses: { $not: { $elemMatch: {$eq: adress }}}}]}]},
  
