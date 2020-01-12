@@ -17,59 +17,83 @@ const connection = MongoClient.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true
 });
 const isIpAlreadyExists = (result, adress) => {
-  if(result === null) return false;
-  else if("ipAdresses" in result === false || result.ipAdresses.indexOf(adress) === -1) return false;
+  if (result === null) return false;
+  else if (
+    "ipAdresses" in result === false ||
+    result.ipAdresses.indexOf(adress) === -1
+  )
+    return false;
   else return true;
-}
+};
 
-const setter = (req,)
+const setter = (req, isIpAlreadyExists, response, result) => {
+  let adress = req.header("X-Forwarded-For").split(",")[0];
+  const { symbol, latestPrice } = JSON.parse(response);
+  let setter = {};
+
+  if (
+    "like" in req.body === false ||
+    req.body.like !== "true" ||
+    isIpAlreadyExists(result, adress)
+  ) {
+    setter = {
+      $set: { price: latestPrice },
+      $setOnInsert: { stock: symbol, likes: 0, ipAdresses: [] }
+    };
+  } else if (req.body.like === "true" && !isIpAlreadyExists(result, adress)) {
+    setter = {
+      $set: { price: latestPrice },
+      $inc: { likes: 1 },
+      $setOnInsert: { stock: symbol },
+      $addToSet: { ipAdresses: adress }
+    };
+  }
+  return setter;
+};
 module.exports = function(app) {
   app.route("/api/stock-prices").post((req, res) => {
-    console.log(req.body)
-    rp(
-      "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
-    )
-      .then(response => {
-        connection.then(client => {
-          client.db("test").collection("priceChecker").findOne({ stock: req.body.stock.toUpperCase() }).then(result => {
-            let adress = req.header("X-Forwarded-For").split(",")[0];
-            const { symbol, latestPrice } = JSON.parse(response);
-            let setter = { };
-            
-            if ("like" in req.body === false || req.body.like !== "true" || isIpAlreadyExists(result, adress)) {
-              setter = {
-                $set: { price: latestPrice },
-                $setOnInsert: { stock: symbol, likes: 0, ipAdresses: [] }
-              };
-            } else if (req.body.like === "true" && !isIpAlreadyExists(result, adress)) {
-              setter = {
-                $set: { price: latestPrice },
-                $inc: { likes: 1 },
-                $setOnInsert: { stock: symbol },
-                $addToSet: { ipAdresses: adress }
-              };
-            }
-            connection.then(client => {
-              client
-                .db("test")
-                .collection("priceChecker")
-                .findOneAndUpdate({ stock: req.body.stock.toUpperCase() }, setter, {
-                  upsert: true,
-                  returnOriginal: false
-                })
-                .then(result => {
-                  const { _id, ...rest } = result.value;
-                  res.send({ stockData: rest });
-                  console.log(result.value)
+    if(typeof req.body.stock === "string") {
+      rp(
+        "https://repeated-alpaca.glitch.me/v1/stock/" + req.body.stock + "/quote"
+      )
+        .then(response => {
+          connection.then(client => {
+            client
+              .db("test")
+              .collection("priceChecker")
+              .findOne({ stock: req.body.stock.toUpperCase() })
+              .then(result => {
+                connection.then(client => {
+                  client
+                    .db("test")
+                    .collection("priceChecker")
+                    .findOneAndUpdate(
+                      { stock: req.body.stock.toUpperCase() },
+                      setter(req, isIpAlreadyExists, response, result),
+                      {
+                        upsert: true,
+                        returnOriginal: false
+                      }
+                    )
+                    .then(result => {
+                      const { _id, ...rest } = result.value;
+                      res.send({ stockData: rest });
+                      console.log(result.value);
+                    });
                 });
-            });
-          })
+              });
+          });
         })
-        
+        .catch(error => {
+          console.log(error);
+          return res.send("Something went wrong!");
+        });
+    } else if(typeof req.body.stock === "object") {
+      const { stock } = req.body;
+      rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote").then(stock_1 => {
+        rp("https://repeated-alpaca.glitch.me/v1/stock/" + stock[0] + "/quote")
       })
-      .catch(error => {
-      console.log(error)
-        return res.send("Something went wrong!");
-      });
+    }
   });
+  
 };
