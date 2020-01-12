@@ -130,6 +130,7 @@ module.exports = function(app) {
                     }
                   }
                 }))
+            collection(client).createIndex({ stock: 1 }, { unique: true });
             collection(client)
               .bulkWrite(
               
