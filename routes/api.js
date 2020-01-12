@@ -21,24 +21,25 @@ const collection = client => {
   return client.db("test").collection("priceChecker");
 };
 
-const newSetter = req => {
+const newSetter = sendedData => {
+  console.log(sendedData)
   let setter = [];
-  let like = "like" in req.body ? true : false;
-  if (typeof req.body.stock === "object") {
-    req.body.stock.map(el => {
+  let like = "like" in sendedData ? true : false;
+  if (typeof sendedData.stock === "object") {
+    sendedData.stock.map(el => {
       setter = [...setter, { stock: el, like }];
     });
-  } else setter = [{ stock: req.body.stock, like }];
+  } else setter = [{ stock: sendedData.stock, like }];
   return setter;
 };
 
-const addData = (req, res, stocks) => {
+const addData = (req, res, stocks, sendedData) => {
   connection.then(client => {
     let adress = req.header("X-Forwarded-For").split(",")[0];
     collection(client).createIndex({ stock: 1 }, { unique: true });
     collection(client)
       .bulkWrite(
-        newSetter(req).map((obj, i, arr) => {
+        newSetter(sendedData).map((obj, i, arr) => {
           return obj.like === true
             ? {
                 updateOne: {
@@ -96,7 +97,7 @@ const request = (sendedData, req, res) => {
     )
       .then(response => {
         const stocks = [response];
-        addData(sendedData, res, stocks);
+        addData(req, res, stocks, sendedData);
         connection.then(client => {
           collection(client)
             .find({ stock: sendedData.stock.toUpperCase() })
@@ -108,7 +109,6 @@ const request = (sendedData, req, res) => {
         });
       })
       .catch(error => {
-        console.log(error);
         return res.send("Something went wrong!");
       });
   } else if (typeof sendedData.stock === "object") {
@@ -120,7 +120,7 @@ const request = (sendedData, req, res) => {
         "https://repeated-alpaca.glitch.me/v1/stock/" + stock[1] + "/quote"
       ).then(stock_2 => {
         const stocks = [stock_1, stock_2];
-        addData(req, res, stocks);
+        addData(req, res, stocks, sendedData);
         connection.then(client => {
           collection(client)
             .find({
