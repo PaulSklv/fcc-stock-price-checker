@@ -22,7 +22,11 @@ suite('Functional Tests', function() {
         .get('/api/stock-prices')
         .query({stock: 'goog'})
         .end(function(err, res){
-          
+          assert.equal(res.status, 200);
+          assert.isArray(res.body);
+          assert.property(res.body[0].stockDdata, "stock");
+         assert.property(res.body[0].stockDdata, "price");
+         assert.property(res.body[0].stockDdata, "likes");
           //complete this one too
           
           done();
@@ -30,11 +34,37 @@ suite('Functional Tests', function() {
       });
       
       test('1 stock with like', function(done) {
-        
+        chai.request(server)
+          .get('/api/stock-prices')
+          .query({stock: 'goog', like: 'true'})
+          .end(function(err, res){
+            assert.equal(res.status, 200);
+            assert.isArray(res.body);
+            assert.property(res.body[0].stockDdata, "stock");
+           assert.property(res.body[0].stockDdata, "price");
+           assert.property(res.body[0].stockDdata, "likes");
+           assert.property(res.body[0].stockDdata.likes, 1);
+            //complete this one too
+
+            done();
+          });
       });
       
       test('1 stock with like again (ensure likes arent double counted)', function(done) {
-        
+        chai.request(server)
+          .get('/api/stock-prices')
+          .query({stock: 'goog', like: 'true'})
+          .end(function(err, res){
+            assert.equal(res.status, 200);
+            assert.isArray(res.body);
+            assert.property(res.body[0].stockDdata, "stock");
+             assert.property(res.body[0].stockDdata, "price");
+             assert.property(res.body[0].stockDdata, "likes");
+             assert.property(res.body[0].stockDdata.likes, 1);
+            //complete this one too
+
+            done();
+          });
       });
       
       test('2 stocks', function(done) {
